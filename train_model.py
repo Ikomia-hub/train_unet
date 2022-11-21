@@ -10,12 +10,14 @@ import random
 from train_unet.utils.utils_prediction import mask_to_image
 from datetime import datetime
 import os
+import yaml
+
 
 def train_net(model, ikDataset, epochs, batch_size, learning_rate,
-              val_percentage, img_scale, num_channels, num_classes, output_folder, stop, seed=10, writer=None):
+              val_percentage, img_scale, num_channels, num_classes, output_folder, stop, step, seed=10, writer=None):
 
     #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    device  = torch.device('cpu')
+    device = torch.device('cpu')
     net = model(n_channels=num_channels, n_classes=num_classes, bilinear=False)
     net.to(device=device)
     # 2. Split into train / validation partitions
@@ -37,19 +39,13 @@ def train_net(model, ikDataset, epochs, batch_size, learning_rate,
     net.train()
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
-    optimizer = optim.RMSprop(net.parameters(), lr=learning_rate, weight_decay=1e-6, momentum=0.9)
-    criterion = nn.CrossEntropyLoss()
+    optimizer = optimiser(net.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=momentum)
+    criterion = loss_function
     # global iterations
     tr_global_step = 0
     valid_global_step = 0
 
     # 5. Begin training
-    # liste contenant les loss de chaque époch (print pour chaque époch va afficher )
-    epoch_losses = []
-    Epoch_dice_scores = []
-
-    val_losses = []
-    val_dice_scores = []
 
     for epoch in range(epochs):
 
@@ -58,7 +54,6 @@ def train_net(model, ikDataset, epochs, batch_size, learning_rate,
 
         epoch_loss = 0
         epoch_dice_score = 0
-        IOU_epoch_score = 0
         net.train()
         with tqdm(total=n_train, desc=f'Epoch {epoch + 1}/{epochs}', unit='img') as train_bar:
             for batch in train_loader:
@@ -74,7 +69,7 @@ def train_net(model, ikDataset, epochs, batch_size, learning_rate,
 
                 # cross entrpy loss : input shape(batch size, num class, h, w) , targuet shape(batch size, h, w)
                 # targuet must be the localisation of the classes
-                loss =criterion(masks_pred, true_masks) \
+                loss = criterion(masks_pred, true_masks) \
                        + dice_loss(F.softmax(masks_pred.float(), dim=1).float(),
                                    F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(), multiclass=True)
                 # one hot vector of shape (batch_size, num_classes, W, H)
@@ -84,6 +79,7 @@ def train_net(model, ikDataset, epochs, batch_size, learning_rate,
 
                 train_bar.update(images.shape[0])
                 tr_global_step += 1
+                step()
 
                 epoch_loss += loss.item()
 
@@ -123,7 +119,6 @@ def train_net(model, ikDataset, epochs, batch_size, learning_rate,
 
                     loss_val_ep += loss_val.item()
                     # compute the Dice score, ignoring background
-                    # val_score = multiclass_dice_coeff(mask_pred[:, 1:, ...], mask_true[:, 1:, ...], reduce_batch_first=False)
                     val_score = multiclass_dice_coeff(F.softmax(mask_pred.float(), dim=1).float(),
                                                       F.one_hot(mask_true, net.n_classes).permute(0, 3, 1, 2).float())
                     validation_score += val_score.item()
@@ -155,7 +150,7 @@ def train_net(model, ikDataset, epochs, batch_size, learning_rate,
     str_datetime = datetime.now().strftime("%d-%m-%YT%Hh%Mm%Ss")
     # output dir
     if os.path.isdir(output_folder):
-        output_path = os.path.join(param.cfg["outputFolder"], str_datetime)
+        output_path = os.path.join(output_folder, str_datetime)
     else:
         # create output folder
         dir_path = os.path.dirname(__file__)
@@ -166,3 +161,16 @@ def train_net(model, ikDataset, epochs, batch_size, learning_rate,
     torch.save(net.state_dict(), model_path)
 
     return "Training Finished!"
+
+
+# Read yaml file : extract model parameters
+config_path = os.path.dirname(os.path.realpath(__file__)) + "/config.yaml"
+with open(config_path) as file:
+    params = yaml.load(file, Loader=yaml.SafeLoader)
+
+optimiser = params['training_params']['optimiser']
+optimiser = eval(optimiser + "()")
+weight_decay = float(params['training_params']['weight_decay'])
+momentum = float(params['training_params']['momentum'])
+loss_function = params['training_params']['loss_function']
+loss_function = eval(loss_function + "()")

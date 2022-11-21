@@ -40,77 +40,36 @@ class TrainUnetWidget(core.CWorkflowTaskWidget):
 
         # Create layout : QGridLayout by default
         self.gridLayout = QGridLayout()
-        # PyQt -> Qt wrapping
-        layout = qtconversion.PyQtToQt(self.gridLayout)
-
-        img_scaleLabel = QLabel("Scale (resize images)")
-        self.img_scaleSpinBox = QDoubleSpinBox()
-        self.img_scaleSpinBox.setRange(0.1, 1)
-        self.img_scaleSpinBox.setDecimals(4)
-        self.img_scaleSpinBox.setSingleStep(0.0001)
-        self.img_scaleSpinBox.setValue(self.parameters.cfg["img_scale"])
-
-        num_classesLabel = QLabel("Classes number:")
-        self.num_classesSpinBox = QSpinBox()
-        self.num_classesSpinBox.setRange(1, 2147483647)
-        self.num_classesSpinBox.setSingleStep(1)
-        self.num_classesSpinBox.setValue(self.parameters.cfg["num_classes"])
-
-        num_channelsLabel = QLabel("Channels number:")
-        self.num_channelsSpinBox = QSpinBox()
-        self.num_channelsSpinBox.setRange(1, 4)
-        self.num_channelsSpinBox.setSingleStep(1)
-        self.num_channelsSpinBox.setValue(self.parameters.cfg["num_channels"])
-
-        epochsLabel = QLabel("Number of epochs:")
-        self.epochsSpinBox = QSpinBox()
-        self.epochsSpinBox.setRange(1, 2147483647)
-        self.epochsSpinBox.setSingleStep(1)
-        self.epochsSpinBox.setValue(self.parameters.cfg["epochs"])
-
-        batch_sizeLabel = QLabel("Batch size:")
-        self.batch_sizeSpinBox = QSpinBox()
-        self.batch_sizeSpinBox.setRange(1, 2147483647)
-        self.batch_sizeSpinBox.setSingleStep(1)
-        self.batch_sizeSpinBox.setValue(self.parameters.cfg["batch_size"])
-
-        learning_rateLabel = QLabel("learning rate:")
-        self.learning_rateSpinBox = QDoubleSpinBox()
-        self.learning_rateSpinBox.setRange(0, 10)
-        self.learning_rateSpinBox.setDecimals(4)
-        self.learning_rateSpinBox.setSingleStep(0.0001)
-        self.learning_rateSpinBox.setValue(self.parameters.cfg["learning_rate"])
-
-        val_percentLabel = QLabel("validation percentage:")
-        self.val_percentSpinBox = QSpinBox()
-        self.val_percentSpinBox.setRange(0, 100)
-        self.val_percentSpinBox.setSingleStep(1)
-        self.val_percentSpinBox.setValue(self.parameters.cfg["val_percent"])
 
 
-        # Set widget layout
-        self.gridLayout.addWidget(img_scaleLabel, 0, 0, 1, 1)
-        self.gridLayout.addWidget(self.img_scaleSpinBox, 0, 1, 1, 2)
-        self.gridLayout.addWidget(num_classesLabel, 1, 0, 1, 1)
-        self.gridLayout.addWidget(self.num_classesSpinBox, 1, 1, 1, 2)
-        self.gridLayout.addWidget(num_channelsLabel, 2, 0, 1, 1)
-        self.gridLayout.addWidget(self.num_channelsSpinBox, 2, 1, 1, 2)
+        # image scale
+        self.spin_scale = pyqtutils.append_double_spin(self.gridLayout, "img_scale", self.parameters.cfg["img_scale"])
 
-        self.gridLayout.addWidget(epochsLabel, 3, 0, 1, 1)
-        self.gridLayout.addWidget(self.epochsSpinBox, 3, 1, 1, 2)
-        self.gridLayout.addWidget(batch_sizeLabel, 4, 0, 1, 1)
-        self.gridLayout.addWidget(self.batch_sizeSpinBox, 4, 1, 1, 2)
-        self.gridLayout.addWidget(learning_rateLabel, 5, 0, 1, 1)
-        self.gridLayout.addWidget(self.learning_rateSpinBox, 5, 1, 1, 2)
-        self.gridLayout.addWidget(val_percentLabel, 6, 0, 1, 1)
-        self.gridLayout.addWidget(self.val_percentSpinBox, 6, 1, 1, 2)
+        # num classes
+        self.spin_classes = pyqtutils.append_spin(self.gridLayout, "num_classes", self.parameters.cfg["num_classes"])
+
+        # num channels
+        self.spin_channels = pyqtutils.append_spin(self.gridLayout, "num_channels", self.parameters.cfg["num_channels"])
+
+        # Epochs
+        self.spin_epochs = pyqtutils.append_spin(self.gridLayout, "epochs", self.parameters.cfg["epochs"])
+
+        # batch size
+        self.spin_batch = pyqtutils.append_spin(self.gridLayout, "batch_size", self.parameters.cfg["batch_size"])
+
+        # learning rate
+        self.spin_lr = pyqtutils.append_double_spin(self.gridLayout, "learning_rate", self.parameters.cfg["learning_rate"])
+
+        # validation percentage
+        self.spin_val = pyqtutils.append_spin(self.gridLayout, "val_percent", self.parameters.cfg["val_percent"])
 
         # Output folder
         self.browse_out_folder = pyqtutils.append_browse_file(self.gridLayout, label="Output folder",
                                                               path=self.parameters.cfg["outputFolder"],
                                                               tooltip="Select folder",
                                                               mode=QFileDialog.Directory)
-
+        # PyQt -> Qt wrapping
+        layout = qtconversion.PyQtToQt(self.gridLayout)
         self.setLayout(layout)
 
 
@@ -118,13 +77,13 @@ class TrainUnetWidget(core.CWorkflowTaskWidget):
         # Apply button clicked slot
 
         # Get parameters from widget
-        self.parameters.cfg["img_scale"] = self.img_scaleSpinBox.value()
-        self.parameters.cfg["num_classes"] = self.num_classesSpinBox.value()
-        self.parameters.cfg["num_channels"] = self.num_channelsSpinBox.value()
-        self.parameters.cfg["epochs"] = self.epochsSpinBox.value()
-        self.parameters.cfg["batch_size"] = self.batch_sizeSpinBox.value()
-        self.parameters.cfg["learning_rate"] = self.learning_rateSpinBox.value()
-        self.parameters.cfg["val_percent"] = self.val_percentSpinBox.value()
+        self.parameters.cfg["img_scale"] = self.spin_scale.value()
+        self.parameters.cfg["num_classes"] = self.spin_classes.value()
+        self.parameters.cfg["num_channels"] = self.spin_channels.value()
+        self.parameters.cfg["epochs"] = self.spin_epochs.value()
+        self.parameters.cfg["batch_size"] = self.spin_batch.value()
+        self.parameters.cfg["learning_rate"] = self.spin_lr.value()
+        self.parameters.cfg["val_percent"] = self.spin_val.value()
         self.parameters.cfg["outputFolder"] = self.browse_out_folder.path
 
         # Send signal to launch the process

@@ -126,13 +126,9 @@ class TrainUnet(dnntrain.TrainProcess):
 
         # train the model
         model = UNet
-        model = train_net(model, input.data, param.cfg["epochs"], param.cfg["batch_size"], param.cfg["learning_rate"],
-              param.cfg["val_percent"], param.cfg["img_scale"], param.cfg["num_channels"], param.cfg["num_classes"], param.cfg["outputFolder"],  self.get_stop, seed=10, writer = writer)
-
-
-
-        # Step progress bar:
-        self.emitStepProgress()
+        train_net(model, input.data, param.cfg["epochs"], param.cfg["batch_size"], param.cfg["learning_rate"],
+              param.cfg["val_percent"], param.cfg["img_scale"], param.cfg["num_channels"], param.cfg["num_classes"],
+                  param.cfg["outputFolder"],  self.get_stop, self.emitStepProgress, seed=10, writer = writer)
 
         # Call endTaskRun to finalize process
         self.endTaskRun()

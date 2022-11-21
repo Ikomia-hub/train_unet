@@ -16,8 +16,7 @@ import yaml
 def train_net(model, ikDataset, epochs, batch_size, learning_rate,
               val_percentage, img_scale, num_channels, num_classes, output_folder, stop, step, seed=10, writer=None):
 
-    #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    device = torch.device('cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     net = model(n_channels=num_channels, n_classes=num_classes, bilinear=False)
     net.to(device=device)
     # 2. Split into train / validation partitions

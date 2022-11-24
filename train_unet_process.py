@@ -24,6 +24,8 @@ from train_unet.unet import UNet
 from train_unet.train_model import train_net
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
+import argparse
+import torch
 import os
 # Your imports below
 
@@ -124,11 +126,48 @@ class TrainUnet(dnntrain.TrainProcess):
         logdir = os.path.join(core.config.main_cfg["tensorboard"]["log_uri"], str_datetime)
         writer = SummaryWriter(logdir)
 
+        # model parameters
+        def get_args():
+            parser = argparse.ArgumentParser(description='Train the UNet on images and target masks')
+            parser.add_argument('--epochs', '-e', metavar='E', type=int, default=param.cfg["epochs"], help='Number of epochs')
+            parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=param.cfg["batch_size"],
+                                help='Batch size')
+            parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=param.cfg["learning_rate"],
+                                help='Learning rate', dest='lr')
+            parser.add_argument('--scale', '-s', type=float, default=param.cfg["img_scale"], help='Downscaling factor of the images')
+            parser.add_argument('--validation', '-v', dest='val', type=float, default=param.cfg["val_percent"],
+                                help='Percent of the data that is used as validation (0-100)')
+            parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
+            parser.add_argument('--classes', '-c', type=int, default=param.cfg["num_classes"], help='Number of classes')
+            parser.add_argument('--channels', '-ch', type=int, default=param.cfg["num_channels"], help='Number of channels')
+
+            return parser.parse_args()
+
         # train the model
-        model = UNet
-        train_net(model, input.data, param.cfg["epochs"], param.cfg["batch_size"], param.cfg["learning_rate"],
-              param.cfg["val_percent"], param.cfg["img_scale"], param.cfg["num_channels"], param.cfg["num_classes"],
-                  param.cfg["outputFolder"],  self.get_stop, self.emitStepProgress, seed=10, writer = writer)
+        # get args
+        args = get_args()
+        # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        device = torch.device('cpu')
+        net = UNet(n_channels=param.cfg["num_channels"], n_classes=param.cfg["num_classes"], bilinear=False)
+        net = UNet(n_channels=3, n_classes=args.classes, bilinear=args.bilinear)
+        net.to(device=device)
+
+
+        train_net(net=net,
+                  ikDataset = input.data,
+                  epochs=args.epochs,
+                  batch_size=args.batch_size,
+                  learning_rate=args.lr,
+                  device=device,
+                  img_scale=args.scale,
+                  val_percentage=args.val / 100,
+                  output_folder = param.cfg["outputFolder"],
+                  stop = self.get_stop,
+                  log_mlflow = self.log_metrics,
+                  step = self.emitStepProgress,
+                  seed=10,
+                  writer = writer)
+
 
         # Call endTaskRun to finalize process
         self.endTaskRun()

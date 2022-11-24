@@ -13,16 +13,13 @@ import os
 import yaml
 
 
-def train_net(model, ikDataset, epochs, batch_size, learning_rate,
-              val_percentage, img_scale, num_channels, num_classes, output_folder, stop, step, seed=10, writer=None):
+def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
+              val_percentage, img_scale, output_folder, stop, log_mlflow, step, seed=10, writer=None):
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    net = model(n_channels=num_channels, n_classes=num_classes, bilinear=False)
-    net.to(device=device)
     # 2. Split into train / validation partitions
     random.seed(seed)
     random.shuffle(ikDataset["images"])
-    n_val = int(len(ikDataset["images"]) * val_percentage/100)
+    n_val = int(len(ikDataset["images"]) * val_percentage)
     n_train = len(ikDataset["images"]) - n_val
 
     dataset = My_dataset({"metadata": ikDataset["metadata"], "images": ikDataset["images"]}, img_scale)
@@ -38,7 +35,7 @@ def train_net(model, ikDataset, epochs, batch_size, learning_rate,
     net.train()
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
-    optimizer = optimiser(net.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=momentum)
+    optimizer = optim.RMSprop(net.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=momentum)
     criterion = loss_function
     # global iterations
     tr_global_step = 0
@@ -47,16 +44,15 @@ def train_net(model, ikDataset, epochs, batch_size, learning_rate,
     # 5. Begin training
 
     for epoch in range(epochs):
-
         if stop():
             break
-
         epoch_loss = 0
         epoch_dice_score = 0
         net.train()
         with tqdm(total=n_train, desc=f'Epoch {epoch + 1}/{epochs}', unit='img') as train_bar:
             for batch in train_loader:
-
+                if stop():
+                    break
                 images = batch['image']
                 true_masks = batch['mask']
 
@@ -91,8 +87,13 @@ def train_net(model, ikDataset, epochs, batch_size, learning_rate,
                 train_bar.set_postfix(**{'running loss': loss.item(), 'running_dice_score': running_dice_score.item()})
 
         # Add training epoch loss and score on tensorboard
-        writer.add_scalar('Loss/train', epoch_loss/len(train_loader), epoch)
-        writer.add_scalar('Dice_score/train', epoch_dice_score/len(train_loader), epoch)
+        writer.add_scalar('Epoch_Loss/train', epoch_loss/len(train_loader), epoch)
+        writer.add_scalar('Epoch_Dice_score/train', epoch_dice_score/len(train_loader), epoch)
+        # Log  metrics to MLflow
+        metrics = {'Epoch_Loss/train': epoch_loss/len(train_loader), 'Epoch_Dice_score/train': epoch_dice_score/len(train_loader)}
+        log_mlflow(metrics, epoch)
+
+
         net.eval()
 
         validation_score = 0
@@ -139,6 +140,11 @@ def train_net(model, ikDataset, epochs, batch_size, learning_rate,
         # Add validation epoch loss and score on tensorboard
         writer.add_scalar('Loss/Val', epoch_loss, epoch)
         writer.add_scalar('Dice_score/Val', epoch_dice_score, epoch)
+        # Log  metrics to MLflow
+        val_metrics = {'Loss/Val': epoch_loss / len(train_loader),
+                   'Dice_score/Val': epoch_dice_score / len(train_loader)}
+        log_mlflow(val_metrics, epoch)
+
 
         net.train()
 
@@ -167,9 +173,10 @@ config_path = os.path.dirname(os.path.realpath(__file__)) + "/config.yaml"
 with open(config_path) as file:
     params = yaml.load(file, Loader=yaml.SafeLoader)
 
-optimiser = params['training_params']['optimiser']
-optimiser = eval(optimiser + "()")
+
 weight_decay = float(params['training_params']['weight_decay'])
 momentum = float(params['training_params']['momentum'])
+#optimiser = params['training_params']['optimiser']
+#optimiser = eval(optimiser + "()")
 loss_function = params['training_params']['loss_function']
 loss_function = eval(loss_function + "()")

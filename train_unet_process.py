@@ -165,7 +165,6 @@ class TrainUnet(dnntrain.TrainProcess):
                   stop = self.get_stop,
                   log_mlflow = self.log_metrics,
                   step = self.emitStepProgress,
-                  seed=10,
                   writer = writer)
 
 

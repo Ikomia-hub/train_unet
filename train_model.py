@@ -14,7 +14,7 @@ import yaml
 
 
 def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
-              val_percentage, img_scale, output_folder, stop, log_mlflow, step, seed=10, writer=None):
+              val_percentage, img_scale, output_folder, stop, log_mlflow, step, writer=None):
 
     # 2. Split into train / validation partitions
     random.seed(seed)
@@ -29,13 +29,13 @@ def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
     print("The length of train set is: {}".format(len(db_train)))
     print("The length of test set is: {}".format(len(db_test)))
 
-    train_loader = DataLoader(db_train, batch_size=batch_size, num_workers=0, pin_memory=True)
-    val_loader = DataLoader(db_test, batch_size=1, num_workers=0, pin_memory=True)
+    train_loader = DataLoader(db_train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
+    val_loader = DataLoader(db_test, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
 
     net.train()
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
-    optimizer = optim.RMSprop(net.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=momentum)
+    optimizer = optim.RMSprop(params = net.parameters(), lr=learning_rate, alpha=alpha, eps=eps, weight_decay=weight_decay, momentum=momentum)
     criterion = loss_function
     # global iterations
     tr_global_step = 0
@@ -168,15 +168,20 @@ def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
     return "Training Finished!"
 
 
-# Read yaml file : extract model parameters
+# load yaml file : extract model parameters
 config_path = os.path.dirname(os.path.realpath(__file__)) + "/config.yaml"
 with open(config_path) as file:
     params = yaml.load(file, Loader=yaml.SafeLoader)
 
-
+seed = params['training_params']['seed']
 weight_decay = float(params['training_params']['weight_decay'])
 momentum = float(params['training_params']['momentum'])
-#optimiser = params['training_params']['optimiser']
-#optimiser = eval(optimiser + "()")
+alpha = float(params['training_params']['alpha'])
+eps = float(params['training_params']['eps'])
+
 loss_function = params['training_params']['loss_function']
 loss_function = eval(loss_function + "()")
+
+# dataloader
+num_workers = params['training_params']['num_workers']
+pin_memory = params['training_params']['pin_memory']

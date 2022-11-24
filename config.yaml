@@ -2,10 +2,17 @@
 ---
 # training parameters
 training_params:
+  seed : 10
   optimiser : optim.RMSprop
   weight_decay : 1e-6
   momentum : 0.9
+  alpha : 0.99
+  eps : 1e-08
   loss_function : nn.CrossEntropyLoss
+
+  # DataLoader
+  num_workers : 0
+  pin_memory : True
 
 # unet parameters
 unet_params :

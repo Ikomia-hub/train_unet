@@ -22,11 +22,13 @@ import copy
 from ikomia.dnn import dnntrain
 from train_unet.unet import UNet
 from train_unet.train_model import train_net
+from train_unet.utils.my_dataset import My_dataset
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 import argparse
 import torch
 import os
+import sys
 # Your imports below
 
 
@@ -45,7 +47,6 @@ class TrainUnetParam(TaskParam):
         self.cfg["val_percent"] = 10
         self.cfg["img_scale"] = 0.5
         self.cfg["num_channels"] = 3
-        self.cfg["num_classes"] = 4
         self.cfg["outputFolder"] = ""
 
     def setParamMap(self, param_map):
@@ -58,8 +59,6 @@ class TrainUnetParam(TaskParam):
         self.cfg["learning_rate"] = param_map["learning_rate"]
         self.cfg["val_percent"] = int(param_map["val_percent"])
         self.cfg["img_scale"] = param_map["img_scale"]
-        self.cfg["num_channels"] = int(param_map["num_channels"])
-        self.cfg["num_classes"] = int(param_map["num_classes"])
         self.cfg["outputFolder"] = param_map["outputFolder"]
         pass
 
@@ -128,6 +127,8 @@ class TrainUnet(dnntrain.TrainProcess):
 
         # model parameters
         def get_args():
+            if len(sys.argv) == 0:
+                sys.argv = ["ikomia"]
             parser = argparse.ArgumentParser(description='Train the UNet on images and target masks')
             parser.add_argument('--epochs', '-e', metavar='E', type=int, default=param.cfg["epochs"], help='Number of epochs')
             parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=param.cfg["batch_size"],
@@ -138,7 +139,6 @@ class TrainUnet(dnntrain.TrainProcess):
             parser.add_argument('--validation', '-v', dest='val', type=float, default=param.cfg["val_percent"],
                                 help='Percent of the data that is used as validation (0-100)')
             parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
-            parser.add_argument('--classes', '-c', type=int, default=param.cfg["num_classes"], help='Number of classes')
             parser.add_argument('--channels', '-ch', type=int, default=param.cfg["num_channels"], help='Number of channels')
 
             return parser.parse_args()
@@ -146,10 +146,11 @@ class TrainUnet(dnntrain.TrainProcess):
         # train the model
         # get args
         args = get_args()
-        # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        device = torch.device('cpu')
-        net = UNet(n_channels=param.cfg["num_channels"], n_classes=param.cfg["num_classes"], bilinear=False)
-        net = UNet(n_channels=3, n_classes=args.classes, bilinear=args.bilinear)
+
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        # get class number from dataset
+        num_classes = len(input.data['metadata']['category_names'])
+        net = UNet(n_channels=param.cfg["num_channels"], n_classes=num_classes, bilinear=False)
         net.to(device=device)
 
 
@@ -178,6 +179,7 @@ class TrainUnet(dnntrain.TrainProcess):
     def stop(self):
         super().stop()
         self.stop_train=True
+
 # --------------------
 # - Factory class to build process object
 # - Inherits PyDataProcess.CTaskFactory from Ikomia API

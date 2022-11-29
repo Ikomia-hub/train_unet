@@ -45,9 +45,6 @@ class TrainUnetWidget(core.CWorkflowTaskWidget):
         # image scale
         self.spin_scale = pyqtutils.append_double_spin(self.gridLayout, "img_scale", self.parameters.cfg["img_scale"])
 
-        # num classes
-        self.spin_classes = pyqtutils.append_spin(self.gridLayout, "num_classes", self.parameters.cfg["num_classes"])
-
         # num channels
         self.spin_channels = pyqtutils.append_spin(self.gridLayout, "num_channels", self.parameters.cfg["num_channels"])
 
@@ -78,7 +75,6 @@ class TrainUnetWidget(core.CWorkflowTaskWidget):
 
         # Get parameters from widget
         self.parameters.cfg["img_scale"] = self.spin_scale.value()
-        self.parameters.cfg["num_classes"] = self.spin_classes.value()
         self.parameters.cfg["num_channels"] = self.spin_channels.value()
         self.parameters.cfg["epochs"] = self.spin_epochs.value()
         self.parameters.cfg["batch_size"] = self.spin_batch.value()

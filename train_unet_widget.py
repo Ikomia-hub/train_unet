@@ -42,8 +42,8 @@ class TrainUnetWidget(core.CWorkflowTaskWidget):
         self.gridLayout = QGridLayout()
 
 
-        # image scale
-        self.spin_scale = pyqtutils.append_double_spin(self.gridLayout, "img_scale", self.parameters.cfg["img_scale"])
+        # image size
+        self.spin_size = pyqtutils.append_spin(self.gridLayout, "img_size", self.parameters.cfg["img_size"])
 
         # num channels
         self.spin_channels = pyqtutils.append_spin(self.gridLayout, "num_channels", self.parameters.cfg["num_channels"])
@@ -61,7 +61,7 @@ class TrainUnetWidget(core.CWorkflowTaskWidget):
         self.spin_val = pyqtutils.append_spin(self.gridLayout, "val_percent", self.parameters.cfg["val_percent"])
 
         # Output folder
-        self.browse_out_folder = pyqtutils.append_browse_file(self.gridLayout, label="Output folder",
+        self.browse_out_folder = pyqtutils.append_browse_file(self.gridLayout, label="Output folder (optional)",
                                                               path=self.parameters.cfg["outputFolder"],
                                                               tooltip="Select folder",
                                                               mode=QFileDialog.Directory)
@@ -74,7 +74,7 @@ class TrainUnetWidget(core.CWorkflowTaskWidget):
         # Apply button clicked slot
 
         # Get parameters from widget
-        self.parameters.cfg["img_scale"] = self.spin_scale.value()
+        self.parameters.cfg["img_size"] = self.spin_size.value()
         self.parameters.cfg["num_channels"] = self.spin_channels.value()
         self.parameters.cfg["epochs"] = self.spin_epochs.value()
         self.parameters.cfg["batch_size"] = self.spin_batch.value()

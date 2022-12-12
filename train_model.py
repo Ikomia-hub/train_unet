@@ -14,7 +14,7 @@ import yaml
 
 
 def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
-              val_percentage, img_scale, output_folder, stop, log_mlflow, step, writer=None):
+              val_percentage, img_size, output_folder, stop, log_mlflow, step, writer=None):
 
     # 2. Split into train / validation partitions
     random.seed(seed)
@@ -22,7 +22,7 @@ def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
     n_val = int(len(ikDataset["images"]) * val_percentage)
     n_train = len(ikDataset["images"]) - n_val
 
-    dataset = My_dataset({"metadata": ikDataset["metadata"], "images": ikDataset["images"]}, img_scale)
+    dataset = My_dataset({"metadata": ikDataset["metadata"], "images": ikDataset["images"]}, img_size)
 
     db_train, db_test = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
 
@@ -35,11 +35,14 @@ def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
     net.train()
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
-    optimizer = optim.RMSprop(params = net.parameters(), lr=learning_rate, alpha=alpha, eps=eps, weight_decay=weight_decay, momentum=momentum)
+    optimizer = optim.RMSprop(params=net.parameters(), lr=learning_rate, alpha=alpha, eps=eps,
+                              weight_decay=weight_decay, momentum=momentum)
     criterion = loss_function
     # global iterations
     tr_global_step = 0
     valid_global_step = 0
+    best_score = 0
+    delta = 0.0001
 
     # 5. Begin training
 
@@ -148,22 +151,14 @@ def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
 
         net.train()
 
+
+        if epoch_dice_score > best_score - delta:
+            best_score = epoch_dice_score
+            model_path = os.path.join(output_folder, 'trained_model.pth')
+            torch.save(net.state_dict(), model_path)
+            print("save model to {}".format(output_folder))
+
     writer.close()
-
-    # save trained model in the output folder
-    # current datetime is used as folder name
-    str_datetime = datetime.now().strftime("%d-%m-%YT%Hh%Mm%Ss")
-    # output dir
-    if os.path.isdir(output_folder):
-        output_path = os.path.join(output_folder, str_datetime)
-    else:
-        # create output folder
-        dir_path = os.path.dirname(__file__)
-        output_path = os.path.join(dir_path, "output", str_datetime)
-        os.makedirs(output_path)
-
-    model_path = os.path.join(output_path, 'trained_model.pth')
-    torch.save(net.state_dict(), model_path)
 
     return "Training Finished!"
 

@@ -15,7 +15,9 @@ import yaml
 
 def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
               val_percentage, img_size, output_folder, stop, log_mlflow, step, writer=None):
-
+    
+    # current date time used to name output files
+    str_datetime = datetime.now().strftime("%d-%m-%YT%Hh%Mm%Ss")
     # 2. Split into train / validation partitions
     random.seed(seed)
     random.shuffle(ikDataset["images"])
@@ -149,12 +151,11 @@ def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
                    'Dice_score/Val': epoch_dice_score / len(train_loader)}
         log_mlflow(val_metrics, epoch)
 
-
         net.train()
 
         if epoch_dice_score > best_score - delta:
             best_score = epoch_dice_score
-            model_path = os.path.join(output_folder, 'trained_model.pth')
+            model_path = os.path.join(output_folder, 'trained_model'+str_datetime+'.pth')
             model_dict = {'state_dict': net.state_dict(),
                         'class_names': class_names}
             torch.save(model_dict, model_path)

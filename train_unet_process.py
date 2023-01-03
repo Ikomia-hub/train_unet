@@ -108,17 +108,19 @@ class TrainUnet(dnntrain.TrainProcess):
             print("ERROR, there is no input dataset")
             self.problem = True
 
-        # current datetime is used as folder name
-        str_datetime = datetime.now().strftime("%d-%m-%YT%Hh%Mm%Ss")
         # output dir
         if os.path.isdir(param.cfg["outputFolder"]):
-            output_path = os.path.join(param.cfg["outputFolder"], str_datetime)
+            output_path = param.cfg["outputFolder"]
         else:
-            # create output folder
             dir_path = os.path.dirname(__file__)
-            output_path = os.path.join(dir_path, "output", str_datetime)
-            os.makedirs(output_path)
-
+            if os.path.isdir(dir_path):
+                output_path = dir_path
+            else:
+                # create output folder
+                output_path = os.path.join(dir_path, "output")
+                os.makedirs(output_path)
+        # current datetime is used as folder name
+        str_datetime = datetime.now().strftime("%d-%m-%YT%Hh%Mm%Ss")
         # tensorboard
         logdir = os.path.join(core.config.main_cfg["tensorboard"]["log_uri"], str_datetime)
         writer = SummaryWriter(logdir)

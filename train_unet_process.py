@@ -205,7 +205,7 @@ class TrainUnetFactory(dataprocess.CTaskFactory):
         self.info.path = "Plugins/Python"
         self.info.version = "1.0.0"
         # self.info.iconPath = "your path to a specific icon"
-        self.info.authors = "chaima bousnah"
+        self.info.authors = "Olaf Ronneberger, Philipp Fischer, Thomas Brox"
         self.info.article = "U-Net: Convolutional Networks for Biomedical Image Segmentation"
         self.info.year = 2015
         # Code source repository

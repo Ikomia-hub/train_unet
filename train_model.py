@@ -21,7 +21,8 @@ def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
     random.shuffle(ikDataset["images"])
     n_val = int(len(ikDataset["images"]) * val_percentage)
     n_train = len(ikDataset["images"]) - n_val
-
+    # load class names from dataset
+    class_names = ikDataset['metadata']['category_names']
     dataset = My_dataset({"metadata": ikDataset["metadata"], "images": ikDataset["images"]}, img_size)
 
     db_train, db_test = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
@@ -151,11 +152,12 @@ def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
 
         net.train()
 
-
         if epoch_dice_score > best_score - delta:
             best_score = epoch_dice_score
             model_path = os.path.join(output_folder, 'trained_model.pth')
-            torch.save(net.state_dict(), model_path)
+            model_dict = {'state_dict': net.state_dict(),
+                        'class_names': class_names}
+            torch.save(model_dict, model_path)
             print("save model to {}".format(output_folder))
 
     writer.close()

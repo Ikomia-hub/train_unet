@@ -13,7 +13,7 @@ import os
 import yaml
 
 
-def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
+def train_net(net, ikDataset, mapping, epochs, batch_size, learning_rate, device,
               val_percentage, img_size, output_folder, stop, log_mlflow, step, writer=None):
     
     # current date time used to name output files
@@ -25,7 +25,8 @@ def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
     n_train = len(ikDataset["images"]) - n_val
     # load class names from dataset
     class_names = ikDataset['metadata']['category_names']
-    dataset = My_dataset({"metadata": ikDataset["metadata"], "images": ikDataset["images"]}, img_size)
+    dataset = My_dataset({"metadata": ikDataset["metadata"], "images": ikDataset["images"]}, img_size, mapping)
+    print('dataset', dataset)
 
     db_train, db_test = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
 
@@ -40,7 +41,7 @@ def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
     optimizer = optim.RMSprop(params=net.parameters(), lr=learning_rate, alpha=alpha, eps=eps,
                               weight_decay=weight_decay, momentum=momentum)
-    criterion = loss_function
+    criterion = nn.CrossEntropyLoss()
     # global iterations
     tr_global_step = 0
     valid_global_step = 0
@@ -63,17 +64,33 @@ def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
                 true_masks = batch['mask']
 
                 images = images.to(device=device, dtype=torch.float32)
+                print('image.shape', images.shape)
                 true_masks = true_masks.to(device=device, dtype=torch.long)
+                #true_masks = torch.argmax(true_masks, dim=1)
+                print('mask shape', true_masks.shape)
+                unique = torch.unique(true_masks)
+                print('unique', unique)
 
                 optimizer.zero_grad()
                 masks_pred = net(images)
 
                 # cross entrpy loss : input shape(batch size, num class, h, w) , targuet shape(batch size, h, w)
                 # targuet must be the localisation of the classes
-                loss = criterion(masks_pred, true_masks) \
-                       + dice_loss(F.softmax(masks_pred.float(), dim=1).float(),
-                                   F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(), multiclass=True)
+                if net.n_classes == 1:
+                    loss = criterion(masks_pred.squeeze(1), true_masks.float())
+                    loss += dice_loss(F.sigmoid(masks_pred.squeeze(1)), true_masks.float(), multiclass=False)
+                else:
+                    loss = criterion(masks_pred, true_masks)
+                    loss += dice_loss(
+                        F.softmax(masks_pred, dim=1).float(),
+                        F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
+                        multiclass=True
+                    )
+
+                print('running loss', loss)
+
                 # one hot vector of shape (batch_size, num_classes, W, H)
+
                 loss.backward()
 
                 optimizer.step()
@@ -86,8 +103,8 @@ def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
 
                 # calculate training score
                 running_dice_score = multiclass_dice_coeff(F.softmax(masks_pred.float(), dim=1).float(),
-                                                           F.one_hot(true_masks, net.n_classes).permute(0, 3, 1,
-                                                                                                        2).float())
+                                                           F.one_hot(true_masks, net.n_classes).permute(0, 3, 1,2).float(),
+                                                           reduce_batch_first=False, epsilon=1e-6)
                 epoch_dice_score += running_dice_score.item()
 
                 train_bar.set_postfix(**{'running loss': loss.item(), 'running_dice_score': running_dice_score.item()})
@@ -113,20 +130,26 @@ def train_net(net, ikDataset, epochs, batch_size, learning_rate, device,
                 # move images and labels to correct device and type
                 image = image.to(device=device, dtype=torch.float32)
                 mask_true = mask_true.to(device=device, dtype=torch.long)
+                #mask_true = torch.argmax(mask_true, dim=1)
 
                 with torch.no_grad():
                     # predict the mask
                     mask_pred = net(image)
-
-                    loss_val = criterion(mask_pred, mask_true) \
-                               + dice_loss(F.softmax(mask_pred.float(), dim=1).float(),
-                                           F.one_hot(mask_true, net.n_classes).permute(0, 3, 1, 2).float(),
-                                           multiclass=True)
-
+                    if net.n_classes == 1:
+                        loss_val = criterion(masks_pred.squeeze(1), true_masks.float())
+                        loss_val += dice_loss(F.sigmoid(masks_pred.squeeze(1)), true_masks.float(), multiclass=False)
+                    else:
+                        loss_val = criterion(masks_pred, true_masks)
+                        loss_val += dice_loss(
+                            F.softmax(masks_pred, dim=1).float(),
+                            F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
+                            multiclass=True
+                        )
                     loss_val_ep += loss_val.item()
                     # compute the Dice score, ignoring background
                     val_score = multiclass_dice_coeff(F.softmax(mask_pred.float(), dim=1).float(),
-                                                      F.one_hot(mask_true, net.n_classes).permute(0, 3, 1, 2).float())
+                                                      F.one_hot(mask_true, net.n_classes).permute(0, 3, 1, 2).float(),
+                                                      reduce_batch_first=False, epsilon=1e-6)
                     validation_score += val_score.item()
 
                     valid_bar.update(image.shape[0])

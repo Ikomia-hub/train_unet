@@ -27,8 +27,10 @@ from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 import argparse
 import torch
+import PIL
 import os
 import sys
+import random
 # Your imports below
 
 
@@ -153,6 +155,21 @@ class TrainUnet(dnntrain.TrainProcess):
         net = UNet(n_channels=param.cfg["num_channels"], n_classes=num_classes, bilinear=False)
         net.to(device=device)
 
+        # get class colors from dataset
+        try:
+            colors = input.data['metadata']['category_colors']
+            print('colors', colors)
+            # transform color list to a dictionary
+            mapping = {}
+            for i in range(len(colors)):
+                mapping[i] = colors[i]
+            mapping = {v: k for k, v in mapping.items()}
+            print('mapping', mapping)
+        except:
+            mapping = None
+            print('dataset is not containing category colors')
+            pass
+
         # save trained model in the output folder
         # current datetime is used as folder name
         str_datetime = datetime.now().strftime("%d-%m-%YT%Hh%Mm%Ss")
@@ -168,6 +185,7 @@ class TrainUnet(dnntrain.TrainProcess):
 
         train_net(net=net,
                   ikDataset=input.data,
+                  mapping=mapping,
                   epochs=args.epochs,
                   batch_size=args.batch_size,
                   learning_rate=args.lr,

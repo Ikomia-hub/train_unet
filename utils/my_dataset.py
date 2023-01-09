@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 from PIL import Image
+import random
 
 
 class My_dataset(Dataset):
@@ -53,7 +54,6 @@ class My_dataset(Dataset):
         assert img.size == mask.size, \
             'Image and mask {name} should be the same size, but are {img.size} and {mask.size}'
 
-
         # apply transformation only to train set
         if self.transforms is not None:
             # apply the transformations to both image and its mask
@@ -63,8 +63,13 @@ class My_dataset(Dataset):
         img = self.preprocess(img, self.size, is_mask=False)
         mask = self.preprocess(mask, self.size, is_mask=True)
 
-        # mapping the class colors
-        mask = self.mask_to_class(mask, self.mapping)
+        # mapping class colors
+        if self.mapping is not None:
+            mask = self.mask_to_class(mask, self.mapping)
+        else:
+            mask = mask[0, :, :]
+
+
         # return a dict of the image and its mask
         return {
             'image': torch.as_tensor(img.copy()).float().contiguous(),

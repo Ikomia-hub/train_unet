@@ -89,7 +89,6 @@ def train_net(net, ikDataset, mapping, epochs, batch_size, learning_rate, device
 
                 train_bar.update(images.shape[0])
                 tr_global_step += 1
-                step()
 
                 epoch_loss += loss.item()
 
@@ -100,6 +99,7 @@ def train_net(net, ikDataset, mapping, epochs, batch_size, learning_rate, device
                 epoch_dice_score += running_dice_score.item()
 
                 train_bar.set_postfix(**{'running loss': loss.item(), 'running_dice_score': running_dice_score.item()})
+
 
         # Add training epoch loss and score on tensorboard
         writer.add_scalar('Epoch_Loss/train', epoch_loss/len(train_loader), epoch)
@@ -165,6 +165,9 @@ def train_net(net, ikDataset, mapping, epochs, batch_size, learning_rate, device
         val_metrics = {'Loss/Val': epoch_valid_loss,
                    'Dice_score/Val': epoch_valid_score}
         log_mlflow(val_metrics, epoch)
+
+        # for progress bar
+        step()
 
         net.train()
 

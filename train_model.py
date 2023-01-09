@@ -167,11 +167,11 @@ def train_net(net, ikDataset, mapping, epochs, batch_size, learning_rate, device
         epoch_valid_score = validation_score / len(val_loader)
 
         # Add validation epoch loss and score on tensorboard
-        writer.add_scalar('Loss/Val', epoch_loss, epoch)
-        writer.add_scalar('Dice_score/Val', epoch_dice_score, epoch)
+        writer.add_scalar('Loss/Val', epoch_valid_loss, epoch)
+        writer.add_scalar('Dice_score/Val', epoch_valid_score, epoch)
         # Log  metrics to MLflow
-        val_metrics = {'Loss/Val': epoch_loss / len(train_loader),
-                   'Dice_score/Val': epoch_dice_score / len(train_loader)}
+        val_metrics = {'Loss/Val': epoch_valid_loss,
+                   'Dice_score/Val': epoch_valid_score}
         log_mlflow(val_metrics, epoch)
 
         net.train()

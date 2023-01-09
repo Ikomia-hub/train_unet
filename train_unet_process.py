@@ -158,16 +158,13 @@ class TrainUnet(dnntrain.TrainProcess):
         # get class colors from dataset
         try:
             colors = input.data['metadata']['category_colors']
-            print('colors', colors)
             # transform color list to a dictionary
             mapping = {}
             for i in range(len(colors)):
                 mapping[i] = colors[i]
             mapping = {v: k for k, v in mapping.items()}
-            print('mapping', mapping)
         except:
             mapping = None
-            print('dataset is not containing category colors')
             pass
 
         # save trained model in the output folder

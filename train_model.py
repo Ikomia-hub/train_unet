@@ -26,7 +26,6 @@ def train_net(net, ikDataset, mapping, epochs, batch_size, learning_rate, device
     # load class names from dataset
     class_names = ikDataset['metadata']['category_names']
     dataset = My_dataset({"metadata": ikDataset["metadata"], "images": ikDataset["images"]}, img_size, mapping)
-    print('dataset', dataset)
 
     db_train, db_test = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
 
@@ -64,12 +63,7 @@ def train_net(net, ikDataset, mapping, epochs, batch_size, learning_rate, device
                 true_masks = batch['mask']
 
                 images = images.to(device=device, dtype=torch.float32)
-                print('image.shape', images.shape)
                 true_masks = true_masks.to(device=device, dtype=torch.long)
-                #true_masks = torch.argmax(true_masks, dim=1)
-                print('mask shape', true_masks.shape)
-                unique = torch.unique(true_masks)
-                print('unique', unique)
 
                 optimizer.zero_grad()
                 masks_pred = net(images)
@@ -86,8 +80,6 @@ def train_net(net, ikDataset, mapping, epochs, batch_size, learning_rate, device
                         F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
                         multiclass=True
                     )
-
-                print('running loss', loss)
 
                 # one hot vector of shape (batch_size, num_classes, W, H)
 

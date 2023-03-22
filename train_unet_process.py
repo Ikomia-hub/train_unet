@@ -51,7 +51,7 @@ class TrainUnetParam(TaskParam):
         self.cfg["num_channels"] = 3
         self.cfg["outputFolder"] = ""
 
-    def setParamMap(self, param_map):
+    def set_values(self, param_map):
         # Set parameters values from Ikomia application
         # Parameters values are stored as string and accessible like a python dict
         self.cfg["img_size"] = int(param_map["img_size"])
@@ -62,10 +62,10 @@ class TrainUnetParam(TaskParam):
         self.cfg["outputFolder"] = param_map["outputFolder"]
         pass
 
-    def getParamMap(self):
+    def get_values(self):
         # Send parameters values to Ikomia application
         # Create the specific dict structure (string container)
-        param_map = core.ParamMap()
+        param_map = {}
         # Example : paramMap["windowSize"] = str(self.windowSize)
         return param_map
 
@@ -82,14 +82,14 @@ class TrainUnet(dnntrain.TrainProcess):
 
         # Create parameters class
         if param is None:
-            self.setParam(TrainUnetParam())
+            self.set_param_object(TrainUnetParam())
         else:
-            self.setParam(copy.deepcopy(param))
+            self.set_param_object(copy.deepcopy(param))
 
-    def getProgressSteps(self):
+    def get_progress_steps(self):
         # Function returning the number of progress steps for this process
         # This is handled by the main progress bar of Ikomia application
-        param = self.getParam()
+        param = self.get_param_object()
         if param is not None:
             return param.cfg["epochs"]
         else:
@@ -97,15 +97,15 @@ class TrainUnet(dnntrain.TrainProcess):
 
     def run(self):
         # Core function of your process
-        # Call beginTaskRun for initialization
-        self.beginTaskRun()
+        # Call begin_task_run for initialization
+        self.begin_task_run()
 
         self.problem = False
         self.stop_train = False
         # Get parameters :
-        param = self.getParam()
+        param = self.get_param_object()
 
-        input = self.getInput(0)
+        input = self.get_input(0)
         if len(input.data) == 0:
             print("ERROR, there is no input dataset")
             self.problem = True
@@ -192,12 +192,12 @@ class TrainUnet(dnntrain.TrainProcess):
                   output_folder = output_path,
                   stop = self.get_stop,
                   log_mlflow = self.log_metrics,
-                  step = self.emitStepProgress,
+                  step = self.emit_step_progress,
                   writer = writer)
 
 
-        # Call endTaskRun to finalize process
-        self.endTaskRun()
+        # Call end_task_run to finalize process
+        self.end_task_run()
 
 
     def get_stop(self):
@@ -217,11 +217,11 @@ class TrainUnetFactory(dataprocess.CTaskFactory):
         dataprocess.CTaskFactory.__init__(self)
         # Set process information as string here
         self.info.name = "train_unet"
-        self.info.shortDescription = "multi-class semantic segmentation using Unet"
+        self.info.short_description = "multi-class semantic segmentation using Unet"
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python"
         self.info.version = "1.0.0"
-        # self.info.iconPath = "your path to a specific icon"
+        # self.info.icon_path = "your path to a specific icon"
         self.info.authors = "Olaf Ronneberger, Philipp Fischer, Thomas Brox"
         self.info.article = "U-Net: Convolutional Networks for Biomedical Image Segmentation"
         self.info.year = 2015

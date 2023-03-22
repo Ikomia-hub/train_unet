@@ -67,10 +67,10 @@ class TrainUnetWidget(core.CWorkflowTaskWidget):
                                                               mode=QFileDialog.Directory)
         # PyQt -> Qt wrapping
         layout = qtconversion.PyQtToQt(self.gridLayout)
-        self.setLayout(layout)
+        self.set_layout(layout)
 
 
-    def onApply(self):
+    def on_apply(self):
         # Apply button clicked slot
 
         # Get parameters from widget
@@ -83,7 +83,7 @@ class TrainUnetWidget(core.CWorkflowTaskWidget):
         self.parameters.cfg["outputFolder"] = self.browse_out_folder.path
 
         # Send signal to launch the process
-        self.emitApply(self.parameters)
+        self.emit_apply(self.parameters)
 
 
 # --------------------

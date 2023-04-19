@@ -43,23 +43,23 @@ class TrainUnetParam(TaskParam):
     def __init__(self):
         TaskParam.__init__(self)
         # Place default value initialization here
-        self.cfg["img_size"] = 128
+        self.cfg["input_size"] = 128
         self.cfg["epochs"] = 50
         self.cfg["batch_size"] = 1
         self.cfg["learning_rate"] = 0.001
         self.cfg["val_percent"] = 10
         self.cfg["num_channels"] = 3
-        self.cfg["outputFolder"] = ""
+        self.cfg["output_folder"] = ""
 
     def set_values(self, param_map):
         # Set parameters values from Ikomia application
         # Parameters values are stored as string and accessible like a python dict
-        self.cfg["img_size"] = int(param_map["img_size"])
+        self.cfg["input_size"] = int(param_map["input_size"])
         self.cfg["epochs"] = int(param_map["epochs"])
         self.cfg["batch_size"] = int(param_map["batch_size"])
         self.cfg["learning_rate"] = float(param_map["learning_rate"])
         self.cfg["val_percent"] = int(param_map["val_percent"])
-        self.cfg["outputFolder"] = param_map["outputFolder"]
+        self.cfg["output_folder"] = param_map["output_folder"]
         pass
 
     def get_values(self):
@@ -111,8 +111,8 @@ class TrainUnet(dnntrain.TrainProcess):
             self.problem = True
 
         # output dir
-        if os.path.isdir(param.cfg["outputFolder"]):
-            output_path = param.cfg["outputFolder"]
+        if os.path.isdir(param.cfg["output_folder"]):
+            output_path = param.cfg["output_folder"]
         else:
             dir_path = os.path.dirname(__file__)
             if os.path.isdir(dir_path):
@@ -137,7 +137,7 @@ class TrainUnet(dnntrain.TrainProcess):
                                 help='Batch size')
             parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=param.cfg["learning_rate"],
                                 help='Learning rate', dest='lr')
-            parser.add_argument('--size', '-s', type=float, default=param.cfg["img_size"], help='the images size same height and width')
+            parser.add_argument('--size', '-s', type=float, default=param.cfg["input_size"], help='the images size same height and width')
             parser.add_argument('--validation', '-v', dest='val', type=float, default=param.cfg["val_percent"],
                                 help='Percent of the data that is used as validation (0-100)')
             parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
@@ -171,8 +171,8 @@ class TrainUnet(dnntrain.TrainProcess):
         # current datetime is used as folder name
         str_datetime = datetime.now().strftime("%d-%m-%YT%Hh%Mm%Ss")
         # output dir
-        if os.path.isdir(param.cfg["outputFolder"]):
-            output_path = os.path.join(param.cfg["outputFolder"], str_datetime)
+        if os.path.isdir(param.cfg["output_folder"]):
+            output_path = os.path.join(param.cfg["output_folder"], str_datetime)
         else:
             # create output folder
             dir_path = os.path.dirname(__file__)

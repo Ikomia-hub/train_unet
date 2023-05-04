@@ -60,14 +60,6 @@ class TrainUnetParam(TaskParam):
         self.cfg["learning_rate"] = float(param_map["learning_rate"])
         self.cfg["val_percent"] = int(param_map["val_percent"])
         self.cfg["output_folder"] = param_map["output_folder"]
-        pass
-
-    def get_values(self):
-        # Send parameters values to Ikomia application
-        # Create the specific dict structure (string container)
-        param_map = {}
-        # Example : paramMap["windowSize"] = str(self.windowSize)
-        return param_map
 
 
 # --------------------
@@ -79,6 +71,7 @@ class TrainUnet(dnntrain.TrainProcess):
     def __init__(self, name, param):
         dnntrain.TrainProcess.__init__(self, name, param)
         self.stop_train = False
+        self.problem = False
 
         # Create parameters class
         if param is None:
@@ -179,7 +172,6 @@ class TrainUnet(dnntrain.TrainProcess):
             output_path = os.path.join(dir_path, "output", str_datetime)
             os.makedirs(output_path)
 
-
         train_net(net=net,
                   ikDataset=input.data,
                   mapping=mapping,
@@ -195,17 +187,16 @@ class TrainUnet(dnntrain.TrainProcess):
                   step = self.emit_step_progress,
                   writer = writer)
 
-
         # Call end_task_run to finalize process
         self.end_task_run()
-
 
     def get_stop(self):
         return self.stop_train
 
     def stop(self):
         super().stop()
-        self.stop_train=True
+        self.stop_train = True
+
 
 # --------------------
 # - Factory class to build process object
@@ -219,7 +210,8 @@ class TrainUnetFactory(dataprocess.CTaskFactory):
         self.info.name = "train_unet"
         self.info.short_description = "multi-class semantic segmentation using Unet"
         # relative path -> as displayed in Ikomia application process tree
-        self.info.path = "Plugins/Python"
+        self.info.path = "Plugins/Python/Segmentation"
+        self.info.icon_path = "icon/unet.jpg"
         self.info.version = "1.0.0"
         # self.info.icon_path = "your path to a specific icon"
         self.info.authors = "Olaf Ronneberger, Philipp Fischer, Thomas Brox"

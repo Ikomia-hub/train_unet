@@ -43,7 +43,7 @@ class TrainUnetWidget(core.CWorkflowTaskWidget):
 
 
         # image size
-        self.spin_size = pyqtutils.append_spin(self.gridLayout, "img_size", self.parameters.cfg["img_size"])
+        self.spin_size = pyqtutils.append_spin(self.gridLayout, "img_size", self.parameters.cfg["input_size"])
 
         # num channels
         self.spin_channels = pyqtutils.append_spin(self.gridLayout, "num_channels", self.parameters.cfg["num_channels"])
@@ -62,28 +62,28 @@ class TrainUnetWidget(core.CWorkflowTaskWidget):
 
         # Output folder
         self.browse_out_folder = pyqtutils.append_browse_file(self.gridLayout, label="Output folder (optional)",
-                                                              path=self.parameters.cfg["outputFolder"],
+                                                              path=self.parameters.cfg["output_folder"],
                                                               tooltip="Select folder",
                                                               mode=QFileDialog.Directory)
         # PyQt -> Qt wrapping
         layout = qtconversion.PyQtToQt(self.gridLayout)
-        self.setLayout(layout)
+        self.set_layout(layout)
 
 
-    def onApply(self):
+    def on_apply(self):
         # Apply button clicked slot
 
         # Get parameters from widget
-        self.parameters.cfg["img_size"] = self.spin_size.value()
+        self.parameters.cfg["input_size"] = self.spin_size.value()
         self.parameters.cfg["num_channels"] = self.spin_channels.value()
         self.parameters.cfg["epochs"] = self.spin_epochs.value()
         self.parameters.cfg["batch_size"] = self.spin_batch.value()
         self.parameters.cfg["learning_rate"] = self.spin_lr.value()
         self.parameters.cfg["val_percent"] = self.spin_val.value()
-        self.parameters.cfg["outputFolder"] = self.browse_out_folder.path
+        self.parameters.cfg["output_folder"] = self.browse_out_folder.path
 
         # Send signal to launch the process
-        self.emitApply(self.parameters)
+        self.emit_apply(self.parameters)
 
 
 # --------------------

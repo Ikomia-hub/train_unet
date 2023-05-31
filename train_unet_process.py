@@ -43,31 +43,23 @@ class TrainUnetParam(TaskParam):
     def __init__(self):
         TaskParam.__init__(self)
         # Place default value initialization here
-        self.cfg["img_size"] = 128
+        self.cfg["input_size"] = 128
         self.cfg["epochs"] = 50
         self.cfg["batch_size"] = 1
         self.cfg["learning_rate"] = 0.001
         self.cfg["val_percent"] = 10
         self.cfg["num_channels"] = 3
-        self.cfg["outputFolder"] = ""
+        self.cfg["output_folder"] = ""
 
-    def setParamMap(self, param_map):
+    def set_values(self, param_map):
         # Set parameters values from Ikomia application
         # Parameters values are stored as string and accessible like a python dict
-        self.cfg["img_size"] = int(param_map["img_size"])
+        self.cfg["input_size"] = int(param_map["input_size"])
         self.cfg["epochs"] = int(param_map["epochs"])
         self.cfg["batch_size"] = int(param_map["batch_size"])
         self.cfg["learning_rate"] = float(param_map["learning_rate"])
         self.cfg["val_percent"] = int(param_map["val_percent"])
-        self.cfg["outputFolder"] = param_map["outputFolder"]
-        pass
-
-    def getParamMap(self):
-        # Send parameters values to Ikomia application
-        # Create the specific dict structure (string container)
-        param_map = core.ParamMap()
-        # Example : paramMap["windowSize"] = str(self.windowSize)
-        return param_map
+        self.cfg["output_folder"] = param_map["output_folder"]
 
 
 # --------------------
@@ -79,17 +71,18 @@ class TrainUnet(dnntrain.TrainProcess):
     def __init__(self, name, param):
         dnntrain.TrainProcess.__init__(self, name, param)
         self.stop_train = False
+        self.problem = False
 
         # Create parameters class
         if param is None:
-            self.setParam(TrainUnetParam())
+            self.set_param_object(TrainUnetParam())
         else:
-            self.setParam(copy.deepcopy(param))
+            self.set_param_object(copy.deepcopy(param))
 
-    def getProgressSteps(self):
+    def get_progress_steps(self):
         # Function returning the number of progress steps for this process
         # This is handled by the main progress bar of Ikomia application
-        param = self.getParam()
+        param = self.get_param_object()
         if param is not None:
             return param.cfg["epochs"]
         else:
@@ -97,22 +90,22 @@ class TrainUnet(dnntrain.TrainProcess):
 
     def run(self):
         # Core function of your process
-        # Call beginTaskRun for initialization
-        self.beginTaskRun()
+        # Call begin_task_run for initialization
+        self.begin_task_run()
 
         self.problem = False
         self.stop_train = False
         # Get parameters :
-        param = self.getParam()
+        param = self.get_param_object()
 
-        input = self.getInput(0)
+        input = self.get_input(0)
         if len(input.data) == 0:
             print("ERROR, there is no input dataset")
             self.problem = True
 
         # output dir
-        if os.path.isdir(param.cfg["outputFolder"]):
-            output_path = param.cfg["outputFolder"]
+        if os.path.isdir(param.cfg["output_folder"]):
+            output_path = param.cfg["output_folder"]
         else:
             dir_path = os.path.dirname(__file__)
             if os.path.isdir(dir_path):
@@ -137,7 +130,7 @@ class TrainUnet(dnntrain.TrainProcess):
                                 help='Batch size')
             parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=param.cfg["learning_rate"],
                                 help='Learning rate', dest='lr')
-            parser.add_argument('--size', '-s', type=float, default=param.cfg["img_size"], help='the images size same height and width')
+            parser.add_argument('--size', '-s', type=float, default=param.cfg["input_size"], help='the images size same height and width')
             parser.add_argument('--validation', '-v', dest='val', type=float, default=param.cfg["val_percent"],
                                 help='Percent of the data that is used as validation (0-100)')
             parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
@@ -171,14 +164,13 @@ class TrainUnet(dnntrain.TrainProcess):
         # current datetime is used as folder name
         str_datetime = datetime.now().strftime("%d-%m-%YT%Hh%Mm%Ss")
         # output dir
-        if os.path.isdir(param.cfg["outputFolder"]):
-            output_path = os.path.join(param.cfg["outputFolder"], str_datetime)
+        if os.path.isdir(param.cfg["output_folder"]):
+            output_path = os.path.join(param.cfg["output_folder"], str_datetime)
         else:
             # create output folder
             dir_path = os.path.dirname(__file__)
             output_path = os.path.join(dir_path, "output", str_datetime)
             os.makedirs(output_path)
-
 
         train_net(net=net,
                   ikDataset=input.data,
@@ -192,20 +184,19 @@ class TrainUnet(dnntrain.TrainProcess):
                   output_folder = output_path,
                   stop = self.get_stop,
                   log_mlflow = self.log_metrics,
-                  step = self.emitStepProgress,
+                  step = self.emit_step_progress,
                   writer = writer)
 
-
-        # Call endTaskRun to finalize process
-        self.endTaskRun()
-
+        # Call end_task_run to finalize process
+        self.end_task_run()
 
     def get_stop(self):
         return self.stop_train
 
     def stop(self):
         super().stop()
-        self.stop_train=True
+        self.stop_train = True
+
 
 # --------------------
 # - Factory class to build process object
@@ -217,11 +208,12 @@ class TrainUnetFactory(dataprocess.CTaskFactory):
         dataprocess.CTaskFactory.__init__(self)
         # Set process information as string here
         self.info.name = "train_unet"
-        self.info.shortDescription = "multi-class semantic segmentation using Unet"
+        self.info.short_description = "multi-class semantic segmentation using Unet"
         # relative path -> as displayed in Ikomia application process tree
-        self.info.path = "Plugins/Python"
+        self.info.path = "Plugins/Python/Segmentation"
+        self.info.icon_path = "icon/unet.jpg"
         self.info.version = "1.0.0"
-        # self.info.iconPath = "your path to a specific icon"
+        # self.info.icon_path = "your path to a specific icon"
         self.info.authors = "Olaf Ronneberger, Philipp Fischer, Thomas Brox"
         self.info.article = "U-Net: Convolutional Networks for Biomedical Image Segmentation"
         self.info.year = 2015

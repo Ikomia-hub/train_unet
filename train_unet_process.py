@@ -25,7 +25,7 @@ from train_unet.train_model import train_net
 from train_unet.utils.my_dataset import My_dataset
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
-import argparse
+from argparse import Namespace
 import torch
 import PIL
 import os
@@ -120,27 +120,13 @@ class TrainUnet(dnntrain.TrainProcess):
         logdir = os.path.join(core.config.main_cfg["tensorboard"]["log_uri"], str_datetime)
         writer = SummaryWriter(logdir)
 
-        # model parameters
-        def get_args():
-            if len(sys.argv) == 0:
-                sys.argv = ["ikomia"]
-            parser = argparse.ArgumentParser(description='Train the UNet on images and target masks')
-            parser.add_argument('--epochs', '-e', metavar='E', type=int, default=param.cfg["epochs"], help='Number of epochs')
-            parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=param.cfg["batch_size"],
-                                help='Batch size')
-            parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=param.cfg["learning_rate"],
-                                help='Learning rate', dest='lr')
-            parser.add_argument('--size', '-s', type=float, default=param.cfg["input_size"], help='the images size same height and width')
-            parser.add_argument('--validation', '-v', dest='val', type=float, default=param.cfg["val_percent"],
-                                help='Percent of the data that is used as validation (0-100)')
-            parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
-            parser.add_argument('--channels', '-ch', type=int, default=param.cfg["num_channels"], help='Number of channels')
-
-            return parser.parse_args()
-
-        # train the model
         # get args
-        args = get_args()
+        args = Namespace()
+        args.epochs = param.cfg["epochs"]
+        args.batch_size = param.cfg["batch_size"]
+        args.size = param.cfg["input_size"]
+        args.val = param.cfg["val_percent"]
+        args.lr = param.cfg["learning_rate"]
 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         # get class number from dataset

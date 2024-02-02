@@ -198,7 +198,7 @@ class TrainUnetFactory(dataprocess.CTaskFactory):
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Segmentation"
         self.info.icon_path = "icon/unet.jpg"
-        self.info.version = "1.0.0"
+        self.info.version = "1.0.1"
         self.info.license = "GPL-3.0 license"
         # self.info.icon_path = "your path to a specific icon"
         self.info.authors = "Olaf Ronneberger, Philipp Fischer, Thomas Brox"
